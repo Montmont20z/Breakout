@@ -1,0 +1,667 @@
+// main.cpp
+#define DIRECTINPUT_VERSION 0x0800
+#include <windows.h>
+#include <d3d9.h>
+#include <d3dx9.h>
+#include <dinput.h>
+#include <dsound.h>
+#include <vector>
+#include <memory>
+#include <string>
+#include <algorithm>
+
+#pragma comment(lib, "d3d9.lib")
+#pragma comment(lib, "d3dx9.lib")
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dsound.lib")
+#pragma comment(lib, "dxguid.lib")
+
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+
+// Forward declarations
+class Game;
+class Renderer;
+class InputManager;
+class AudioManager;
+class Player;
+class Paddle;
+class Ball;
+class Brick;
+class StandardBrick;
+class StrongBrick;
+class Wall;
+
+
+// Vector2 helper class
+struct Vector2 {
+    float x, y;
+    Vector2(float x = 0, float y = 0) : x(x), y(y) {}
+    Vector2 operator+(const Vector2& other) const { return Vector2(x + other.x, y + other.y); }
+    Vector2 operator-(const Vector2& other) const { return Vector2(x - other.x, y - other.y); }
+    Vector2 operator*(float scalar) const { return Vector2(x * scalar, y * scalar); }
+    float Length() const { return sqrtf(x * x + y * y); }
+    Vector2 Normalize() const { float len = Length(); return len > 0 ? Vector2(x / len, y / len) : Vector2(0, 0); }
+};
+
+// Renderer class
+class Renderer {
+private:
+    IDirect3D9* d3d;
+    IDirect3DDevice9* device;
+    ID3DXSprite* sprite;
+    ID3DXFont* font;
+
+public:
+    Renderer() : d3d(nullptr), device(nullptr), sprite(nullptr), font(nullptr) {}
+
+    bool Initialize(HWND hwnd) {
+        d3d = Direct3DCreate9(D3D_SDK_VERSION);
+        if (!d3d) return false;
+
+        D3DPRESENT_PARAMETERS d3dpp = {};
+        d3dpp.Windowed = TRUE;
+        d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+        d3dpp.hDeviceWindow = hwnd;
+        d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+        d3dpp.EnableAutoDepthStencil = TRUE;
+        d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+
+        HRESULT hr = d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hwnd,
+            D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &device);
+        if (FAILED(hr)) return false;
+
+        D3DXCreateSprite(device, &sprite);
+
+        D3DXCreateFont(device, 24, 0, FW_BOLD, 1, FALSE, DEFAULT_CHARSET,
+            OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
+            L"Arial", &font);
+
+        return true;
+    }
+
+    void BeginScene() {
+        device->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+        device->BeginScene();
+        sprite->Begin(D3DXSPRITE_ALPHABLEND);
+    }
+
+    void EndScene() {
+        sprite->End();
+        device->EndScene();
+        device->Present(NULL, NULL, NULL, NULL);
+    }
+
+    void DrawRect(const Vector2& pos, const Vector2& size, D3DCOLOR color) {
+        // Create a simple colored rectangle using a 1x1 white texture
+        static IDirect3DTexture9* whiteTexture = nullptr;
+        if (!whiteTexture) {
+            // Create a 1x1 white texture programmatically
+            HRESULT hr = device->CreateTexture(1, 1, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &whiteTexture, NULL);
+            if (SUCCEEDED(hr)) {
+                D3DLOCKED_RECT lockedRect;
+                hr = whiteTexture->LockRect(0, &lockedRect, NULL, 0);
+                if (SUCCEEDED(hr)) {
+                    DWORD* pixels = (DWORD*)lockedRect.pBits;
+                    *pixels = 0xFFFFFFFF; // White pixel
+                    whiteTexture->UnlockRect(0);
+                }
+            }
+        }
+
+        if (whiteTexture) {
+            D3DXVECTOR2 position(pos.x, pos.y);
+            D3DXVECTOR2 scaling(size.x, size.y);
+            D3DXMATRIX transform;
+            D3DXMatrixTransformation2D(&transform, NULL, 0.0f, &scaling, NULL, 0.0f, &position);
+            sprite->SetTransform(&transform);
+            sprite->Draw(whiteTexture, NULL, NULL, NULL, color);
+
+            // Reset transform
+            D3DXMatrixIdentity(&transform);
+            sprite->SetTransform(&transform);
+        }
+    }
+
+    void DrawText(const std::string& text, const Vector2& pos, D3DCOLOR color) {
+        if (font) {
+            RECT rect = { (LONG)pos.x, (LONG)pos.y, SCREEN_WIDTH, SCREEN_HEIGHT };
+            std::wstring wtext(text.begin(), text.end());
+            font->DrawText(NULL, wtext.c_str(), -1, &rect, DT_LEFT, color);
+        }
+    }
+
+    void Cleanup() {
+        if (font) { font->Release(); font = nullptr; }
+        if (sprite) { sprite->Release(); sprite = nullptr; }
+        if (device) { device->Release(); device = nullptr; }
+        if (d3d) { d3d->Release(); d3d = nullptr; }
+    }
+};
+
+// InputManager class
+class InputManager {
+private:
+    IDirectInput8* directInput;
+    IDirectInputDevice8* keyboard;
+    unsigned char keyState[256];
+
+public:
+    InputManager() : directInput(nullptr), keyboard(nullptr) {}
+
+    bool Initialize(HINSTANCE hInstance, HWND hwnd) {
+        HRESULT hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+            (void**)&directInput, NULL);
+        if (FAILED(hr)) return false;
+
+        hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+        if (FAILED(hr)) return false;
+
+        keyboard->SetDataFormat(&c_dfDIKeyboard);
+        keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+        keyboard->Acquire();
+
+        return true;
+    }
+
+    void Update() {
+        if (keyboard) {
+            keyboard->GetDeviceState(sizeof(keyState), keyState);
+        }
+    }
+
+    bool IsKeyDown(int key) {
+        return (keyState[key] & 0x80) != 0;
+    }
+
+    void Cleanup() {
+        if (keyboard) { keyboard->Release(); keyboard = nullptr; }
+        if (directInput) { directInput->Release(); directInput = nullptr; }
+    }
+};
+
+// Game object classes
+class Player {
+private:
+    int score;
+    int lives;
+
+public:
+    Player() : score(0), lives(3) {}
+
+    void AddScore(int points) { score += points; }
+    void LoseLife() { lives--; }
+    int GetScore() const { return score; }
+    int GetLives() const { return lives; }
+    bool IsGameOver() const { return lives <= 0; }
+};
+
+class Paddle {
+private:
+    Vector2 position;
+    Vector2 size;
+    float speed;
+
+public:
+    Paddle() : position(SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT - 50), size(100, 20), speed(300.0f) {}
+
+    void Update(float dt) {
+        // Keep paddle within screen bounds
+        if (position.x < 0) position.x = 0;
+        if (position.x + size.x > SCREEN_WIDTH) position.x = SCREEN_WIDTH - size.x;
+    }
+
+    void Render(Renderer* renderer) {
+        renderer->DrawRect(position, size, D3DCOLOR_XRGB(255, 255, 255));
+    }
+
+    void MoveLeft(float dt) {
+        position.x -= speed * dt;
+    }
+
+    void MoveRight(float dt) {
+        position.x += speed * dt;
+    }
+
+    Vector2 GetPosition() const { return position; }
+    Vector2 GetSize() const { return size; }
+};
+
+class Ball {
+private:
+    Vector2 position;
+    Vector2 velocity;
+    float radius;
+
+public:
+    Ball() : position(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), velocity(200, -200), radius(10) {}
+
+    void Update(float dt) {
+        position = position + velocity * dt;
+    }
+
+    void Render(Renderer* renderer) {
+        renderer->DrawRect(Vector2(position.x - radius, position.y - radius),
+            Vector2(radius * 2, radius * 2), D3DCOLOR_XRGB(255, 255, 0));
+    }
+
+    void Bounce(const Vector2& normal) {
+        velocity = velocity - normal * (2.0f * (velocity.x * normal.x + velocity.y * normal.y));
+    }
+
+    void Reset() {
+        position = Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+        velocity = Vector2(200, -200);
+    }
+
+    Vector2 GetPosition() const { return position; }
+    float GetRadius() const { return radius; }
+    Vector2 GetVelocity() const { return velocity; }
+};
+
+// Brick classes
+class Brick {
+protected:
+    Vector2 position;
+    Vector2 size;
+    bool isDestroyed;
+    int pointValue;
+
+public:
+    Brick(const Vector2& pos, int points) : position(pos), size(60, 20), isDestroyed(false), pointValue(points) {}
+    virtual ~Brick() {}
+
+    virtual void Hit() { isDestroyed = true; }
+    virtual void Render(Renderer* renderer) = 0;
+
+    bool IsDestroyed() const { return isDestroyed; }
+    int GetPointValue() const { return pointValue; }
+    Vector2 GetPosition() const { return position; }
+    Vector2 GetSize() const { return size; }
+};
+
+class StandardBrick : public Brick {
+public:
+    StandardBrick(const Vector2& pos) : Brick(pos, 10) {}
+
+    void Render(Renderer* renderer) override {
+        if (!isDestroyed) {
+            renderer->DrawRect(position, size, D3DCOLOR_XRGB(255, 0, 0));
+        }
+    }
+};
+
+class StrongBrick : public Brick {
+private:
+    int hitCount;
+    int maxHits;
+
+public:
+    StrongBrick(const Vector2& pos) : Brick(pos, 20), hitCount(0), maxHits(2) {}
+
+    void Hit() override {
+        hitCount++;
+        if (hitCount >= maxHits) {
+            isDestroyed = true;
+        }
+    }
+
+    void Render(Renderer* renderer) override {
+        if (!isDestroyed) {
+            D3DCOLOR color = (hitCount == 0) ? D3DCOLOR_XRGB(0, 255, 0) : D3DCOLOR_XRGB(0, 128, 0);
+            renderer->DrawRect(position, size, color);
+        }
+    }
+};
+
+class PowerUpBrick : public Brick {
+public:
+    PowerUpBrick(const Vector2& pos) : Brick(pos, 30) {}
+
+    void Render(Renderer* renderer) override {
+        if (!isDestroyed) {
+            renderer->DrawRect(position, size, D3DCOLOR_XRGB(255, 0, 255));
+        }
+    }
+};
+
+// Wall class
+enum class WallType { TOP, LEFT, RIGHT, BOTTOM };
+
+class Wall {
+private:
+    Vector2 position;
+    Vector2 size;
+    WallType type;
+
+public:
+    Wall(const Vector2& pos, const Vector2& sz, WallType t) : position(pos), size(sz), type(t) {}
+
+    Vector2 GetPosition() const { return position; }
+    Vector2 GetSize() const { return size; }
+    WallType GetType() const { return type; }
+};
+
+// Game state enum
+enum class GameState { MENU, PLAYING, GAME_OVER };
+
+// Main Game class
+class Game {
+private:
+    GameState gameState;
+    std::unique_ptr<Player> player;
+    std::unique_ptr<Paddle> paddle;
+    std::unique_ptr<Ball> ball;
+    std::vector<std::unique_ptr<Brick>> bricks;
+    std::vector<Wall> walls;
+
+    Renderer* renderer;
+    InputManager* inputManager;
+
+    float deltaTime;
+    DWORD lastTime;
+
+public:
+    Game() : gameState(GameState::MENU), renderer(nullptr), inputManager(nullptr) {
+        lastTime = GetTickCount();
+    }
+
+    bool Initialize(Renderer* r, InputManager* im) {
+        renderer = r;
+        inputManager = im;
+
+        player = std::make_unique<Player>();
+        paddle = std::make_unique<Paddle>();
+        ball = std::make_unique<Ball>();
+
+        // Create walls
+        walls.push_back(Wall(Vector2(0, 0), Vector2(SCREEN_WIDTH, 10), WallType::TOP));
+        walls.push_back(Wall(Vector2(0, 0), Vector2(10, SCREEN_HEIGHT), WallType::LEFT));
+        walls.push_back(Wall(Vector2(SCREEN_WIDTH - 10, 0), Vector2(10, SCREEN_HEIGHT), WallType::RIGHT));
+        walls.push_back(Wall(Vector2(0, SCREEN_HEIGHT - 10), Vector2(SCREEN_WIDTH, 10), WallType::BOTTOM));
+
+        // Create bricks
+        CreateLevel();
+
+        return true;
+    }
+
+    void CreateLevel() {
+        bricks.clear();
+
+        int rows = 5;
+        int cols = 10;
+        float brickWidth = 60;
+        float brickHeight = 20;
+        float spacing = 5;
+        float startX = (SCREEN_WIDTH - (cols * brickWidth + (cols - 1) * spacing)) / 2;
+        float startY = 50;
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                Vector2 pos(startX + col * (brickWidth + spacing), startY + row * (brickHeight + spacing));
+
+                if (row == 0) {
+                    bricks.push_back(std::make_unique<PowerUpBrick>(pos));
+                }
+                else if (row == 1) {
+                    bricks.push_back(std::make_unique<StrongBrick>(pos));
+                }
+                else {
+                    bricks.push_back(std::make_unique<StandardBrick>(pos));
+                }
+            }
+        }
+    }
+
+    void Run() {
+        DWORD currentTime = GetTickCount();
+        deltaTime = (currentTime - lastTime) / 1000.0f;
+        lastTime = currentTime;
+
+        HandleInput();
+        Update(deltaTime);
+        Render();
+    }
+
+    void HandleInput() {
+        inputManager->Update();
+
+        if (gameState == GameState::MENU) {
+            if (inputManager->IsKeyDown(DIK_SPACE)) {
+                gameState = GameState::PLAYING;
+            }
+        }
+        else if (gameState == GameState::PLAYING) {
+            if (inputManager->IsKeyDown(DIK_LEFT)) {
+                paddle->MoveLeft(deltaTime);
+            }
+            if (inputManager->IsKeyDown(DIK_RIGHT)) {
+                paddle->MoveRight(deltaTime);
+            }
+        }
+        else if (gameState == GameState::GAME_OVER) {
+            if (inputManager->IsKeyDown(DIK_R)) {
+                // Restart game
+                player = std::make_unique<Player>();
+                ball->Reset();
+                CreateLevel();
+                gameState = GameState::PLAYING;
+            }
+        }
+    }
+
+    void Update(float dt) {
+        if (gameState == GameState::PLAYING) {
+            paddle->Update(dt);
+            ball->Update(dt);
+            CheckCollisions();
+
+            // Check if all bricks are destroyed
+            bool allDestroyed = true;
+            for (const auto& brick : bricks) {
+                if (!brick->IsDestroyed()) {
+                    allDestroyed = false;
+                    break;
+                }
+            }
+
+            if (allDestroyed) {
+                CreateLevel(); // Create new level
+            }
+
+            if (player->IsGameOver()) {
+                gameState = GameState::GAME_OVER;
+            }
+        }
+    }
+
+    void CheckCollisions() {
+        Vector2 ballPos = ball->GetPosition();
+        float ballRadius = ball->GetRadius();
+
+        // Ball and walls
+        for (const auto& wall : walls) {
+            Vector2 wallPos = wall.GetPosition();
+            Vector2 wallSize = wall.GetSize();
+
+            if (ballPos.x - ballRadius < wallPos.x + wallSize.x &&
+                ballPos.x + ballRadius > wallPos.x &&
+                ballPos.y - ballRadius < wallPos.y + wallSize.y &&
+                ballPos.y + ballRadius > wallPos.y) {
+
+                if (wall.GetType() == WallType::TOP) {
+                    ball->Bounce(Vector2(0, 1));
+                }
+                else if (wall.GetType() == WallType::LEFT) {
+                    ball->Bounce(Vector2(1, 0));
+                }
+                else if (wall.GetType() == WallType::RIGHT) {
+                    ball->Bounce(Vector2(-1, 0));
+                }
+                else if (wall.GetType() == WallType::BOTTOM) {
+                    // Ball hit bottom - lose life
+                    player->LoseLife();
+                    ball->Reset();
+                }
+            }
+        }
+
+        // Ball and paddle
+        Vector2 paddlePos = paddle->GetPosition();
+        Vector2 paddleSize = paddle->GetSize();
+
+        if (ballPos.x - ballRadius < paddlePos.x + paddleSize.x &&
+            ballPos.x + ballRadius > paddlePos.x &&
+            ballPos.y - ballRadius < paddlePos.y + paddleSize.y &&
+            ballPos.y + ballRadius > paddlePos.y) {
+
+            // Calculate bounce angle based on hit position
+            float hitPos = (ballPos.x - paddlePos.x) / paddleSize.x;
+            float angle = (hitPos - 0.5f) * 2.0f; // -1 to 1
+            ball->Bounce(Vector2(angle, -1).Normalize());
+        }
+
+        // Ball and bricks
+        for (auto& brick : bricks) {
+            if (!brick->IsDestroyed()) {
+                Vector2 brickPos = brick->GetPosition();
+                Vector2 brickSize = brick->GetSize();
+
+                if (ballPos.x - ballRadius < brickPos.x + brickSize.x &&
+                    ballPos.x + ballRadius > brickPos.x &&
+                    ballPos.y - ballRadius < brickPos.y + brickSize.y &&
+                    ballPos.y + ballRadius > brickPos.y) {
+
+                    brick->Hit();
+                    if (brick->IsDestroyed()) {
+                        player->AddScore(brick->GetPointValue());
+                    }
+                    ball->Bounce(Vector2(0, 1));
+                }
+            }
+        }
+    }
+
+    void Render() {
+        renderer->BeginScene();
+
+        if (gameState == GameState::MENU) {
+            renderer->DrawText("BREAKOUT", Vector2(SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50), D3DCOLOR_XRGB(255, 255, 255));
+            renderer->DrawText("Press SPACE to start", Vector2(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2), D3DCOLOR_XRGB(255, 255, 255));
+        }
+        else if (gameState == GameState::PLAYING) {
+            // Render game objects
+            paddle->Render(renderer);
+            ball->Render(renderer);
+
+            for (const auto& brick : bricks) {
+                brick->Render(renderer);
+            }
+
+            // Render UI
+            renderer->DrawText("Score: " + std::to_string(player->GetScore()), Vector2(10, 10), D3DCOLOR_XRGB(255, 255, 255));
+            renderer->DrawText("Lives: " + std::to_string(player->GetLives()), Vector2(10, 40), D3DCOLOR_XRGB(255, 255, 255));
+        }
+        else if (gameState == GameState::GAME_OVER) {
+            renderer->DrawText("GAME OVER", Vector2(SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50), D3DCOLOR_XRGB(255, 0, 0));
+            renderer->DrawText("Final Score: " + std::to_string(player->GetScore()), Vector2(SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2), D3DCOLOR_XRGB(255, 255, 255));
+            renderer->DrawText("Press R to restart", Vector2(SCREEN_WIDTH / 2 - 140, SCREEN_HEIGHT / 2 + 30), D3DCOLOR_XRGB(255, 255, 255));
+        }
+
+        renderer->EndScene();
+    }
+};
+
+// Window procedure
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    switch (uMsg) {
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_KEYDOWN:
+        if (wParam == VK_ESCAPE) {
+            PostQuitMessage(0);
+            return 0;
+        }
+        break;
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+// WinMain function
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // Register window class
+    WNDCLASSEX wc = {};
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszClassName = L"BreakoutWindow";
+    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+
+    if (!RegisterClassEx(&wc)) {
+        MessageBox(NULL, L"Window Registration Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    // Create window
+    HWND hwnd = CreateWindowEx(
+        WS_EX_CLIENTEDGE,
+        L"BreakoutWindow",
+        L"Breakout Game",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        SCREEN_WIDTH + 16, SCREEN_HEIGHT + 39, // Account for window borders
+        NULL, NULL, hInstance, NULL
+    );
+
+    if (!hwnd) {
+        MessageBox(NULL, L"Window Creation Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    ShowWindow(hwnd, nCmdShow);
+    UpdateWindow(hwnd);
+
+    // Initialize DirectX and game systems
+    Renderer renderer;
+    InputManager inputManager;
+    Game game;
+
+    if (!renderer.Initialize(hwnd)) {
+        MessageBox(NULL, L"DirectX Initialization Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    if (!inputManager.Initialize(hInstance, hwnd)) {
+        MessageBox(NULL, L"Input Initialization Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    if (!game.Initialize(&renderer, &inputManager)) {
+        MessageBox(NULL, L"Game Initialization Failed!", L"Error", MB_ICONEXCLAMATION | MB_OK);
+        return 0;
+    }
+
+    // Main game loop
+    MSG msg = {};
+    while (msg.message != WM_QUIT) {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            game.Run();
+        }
+    }
+
+    // Cleanup
+    renderer.Cleanup();
+    inputManager.Cleanup();
+
+    return (int)msg.wParam;
+}
