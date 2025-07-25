@@ -142,7 +142,7 @@ d3dx9.lib;user32.lib
     <Text Include="example.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="header\MyWindow.h" />
+    <ClInclude Include="headers\MyWindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

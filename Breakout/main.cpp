@@ -1,4 +1,4 @@
-#include "MyWindow.cpp"
+#include "headers/MyWindow.h"
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {

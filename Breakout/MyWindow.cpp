@@ -1,4 +1,4 @@
-#include "header/MyWindow.h"
+#include "headers/MyWindow.h"
 
 // Constructor
 MyWindow::MyWindow(HINSTANCE hInstance, int width, int height, const std::wstring& title)
