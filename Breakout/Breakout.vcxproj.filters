@@ -21,6 +21,9 @@
     <ClCompile Include="MyWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt" />
@@ -29,5 +32,19 @@
     <ClInclude Include="headers\MyWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="headers\Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\TextureData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\bg1.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\paddle.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

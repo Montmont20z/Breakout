@@ -16,6 +16,9 @@ public:
 	// Retrieves the handle to the created window
 	HWND GetHWND() const;
 
+	int GetWidth() const;
+	int GetHeight() const;
+
 
 private:
 	// StaticWindowProc is to bridge between Win32 Callback and WindowProc

@@ -86,7 +86,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d9.lib;
 d3dx9.lib;user32.lib
@@ -137,12 +137,19 @@ d3dx9.lib;user32.lib
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyWindow.cpp" />
+    <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="headers\MyWindow.h" />
+    <ClInclude Include="headers\Renderer.h" />
+    <ClInclude Include="headers\TextureData.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\paddle.png" />
+    <Image Include="assets\bg1.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

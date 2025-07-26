@@ -29,7 +29,7 @@ bool MyWindow::Initialize() {
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION); // make own icon with LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MYICON))
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION); // LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MYICON))
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW); // make own icon with IDC_HAND
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1); // handle window's client area erased automatically
+	wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); // handle window's client area erased automatically
 
 	m_windowClass = RegisterClassExW(&wc);
 	if (!m_windowClass) {
@@ -59,16 +59,21 @@ void MyWindow::Show(int nCmdShow) const {
 
 bool MyWindow::ProcessMessages() const {
 	MSG msg = {};
-	while (msg.message != WM_QUIT) {
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-			TranslateMessage(&msg);
-			DispatchMessage(&msg); // dispatch to WinProc
-			if (msg.message == WM_QUIT) {
-				return false;
-			}
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		if (msg.message == WM_QUIT) {
+			return false;
 		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 	return true;
+}
+
+int MyWindow::GetWidth() const {
+	return m_width;
+}
+int MyWindow::GetHeight() const {
+	return m_height;
 }
 
 HWND MyWindow::GetHWND() const {
@@ -106,13 +111,3 @@ LRESULT CALLBACK MyWindow::WindowProc(UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	}
 	return DefWindowProcW(m_hWnd, uMsg, wParam, lParam);
 }
-
-
-
-
-
-
-
-
-
-
