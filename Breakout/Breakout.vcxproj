@@ -135,6 +135,7 @@ d3dx9.lib;user32.lib
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyWindow.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -143,6 +144,7 @@ d3dx9.lib;user32.lib
     <Text Include="example.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\InputManager.h" />
     <ClInclude Include="headers\MyWindow.h" />
     <ClInclude Include="headers\Renderer.h" />
     <ClInclude Include="headers\TextureData.h" />

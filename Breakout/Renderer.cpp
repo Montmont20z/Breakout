@@ -21,7 +21,7 @@ Renderer::~Renderer() {
     }
 }
 
-bool Renderer::Initialize(MyWindow myWindow) {
+bool Renderer::Initialize(HWND hWnd, int width, int height) {
     // Create Direct3D 9 object
     m_direct3D9 = Direct3DCreate9(D3D_SDK_VERSION);
     if (!m_direct3D9) {
@@ -36,11 +36,11 @@ bool Renderer::Initialize(MyWindow myWindow) {
 
     // Windowed settings
     m_d3dPP.Windowed = TRUE;
-    m_d3dPP.BackBufferWidth = myWindow.GetWidth();
-    m_d3dPP.BackBufferHeight = myWindow.GetHeight();
+    m_d3dPP.BackBufferWidth = width;
+    m_d3dPP.BackBufferHeight = height;
     m_d3dPP.BackBufferFormat = D3DFMT_UNKNOWN; // Use desktop format
     m_d3dPP.BackBufferCount = 1;
-    m_d3dPP.hDeviceWindow = myWindow.GetHWND();
+    m_d3dPP.hDeviceWindow = hWnd;
     m_d3dPP.EnableAutoDepthStencil = TRUE;
     m_d3dPP.SwapEffect = D3DSWAPEFFECT_DISCARD;
     m_d3dPP.AutoDepthStencilFormat = D3DFMT_D16;
@@ -49,7 +49,7 @@ bool Renderer::Initialize(MyWindow myWindow) {
     HRESULT hr = m_direct3D9->CreateDevice(
         D3DADAPTER_DEFAULT,
         D3DDEVTYPE_HAL,
-        myWindow.GetHWND(),
+        hWnd,
         D3DCREATE_HARDWARE_VERTEXPROCESSING, // Hardware = GPU
         &m_d3dPP,
         &m_d3dDevice
@@ -60,7 +60,7 @@ bool Renderer::Initialize(MyWindow myWindow) {
         hr = m_direct3D9->CreateDevice(
             D3DADAPTER_DEFAULT,
             D3DDEVTYPE_HAL,
-            myWindow.GetHWND(),
+            hWnd,
             D3DCREATE_SOFTWARE_VERTEXPROCESSING, // Software = CPU
             &m_d3dPP,
             &m_d3dDevice

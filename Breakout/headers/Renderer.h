@@ -11,7 +11,7 @@ public:
 	Renderer();
 	~Renderer();
 
-	bool Initialize(MyWindow myWindow);
+	bool Initialize(HWND hWnd, int width, int height);
 	bool LoadTexture(const std::string& path);
 	bool LoadTexturesBatch(const std::vector<std::string>& textureList);
 	void Render();

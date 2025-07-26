@@ -19,7 +19,7 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     }
 
     window.Show(nCmdShow);
-    if (!renderer.Initialize(window)) {
+    if (!renderer.Initialize(window.GetHWND(), window.GetWidth(), window.GetHeight())) {
         MessageBoxW(nullptr, L"Failed to initialize renderer!", L"Error", MB_ICONERROR);
         return -1;
     }
