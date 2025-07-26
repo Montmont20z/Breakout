@@ -1,12 +1,18 @@
 #include "headers/Renderer.h"
 #include "headers/MyWindow.h"
 
-Renderer::Renderer() {
-
-}
-
+Renderer::Renderer() = default;
 
 Renderer::~Renderer() {
+    // Clean up textures
+    for (auto& kv : m_preloadedTextures) {
+        if (kv.second.texture) {
+            kv.second.texture->Release();
+            kv.second.texture = nullptr;
+        }
+    }
+    m_preloadedTextures.clear();
+
     if (m_spriteBrush) {
         m_spriteBrush->Release();
         m_spriteBrush = nullptr;
