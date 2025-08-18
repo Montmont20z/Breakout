@@ -38,15 +38,17 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         MessageBoxW(nullptr, L"Failed to load textures!", L"Error", MB_ICONERROR);
         return -1;
     }
+    // override or load militia with logical size 128x192
+    renderer.LoadTexture("assets/militia.png", 128, 192);
 
     if (!inputManager.Initialize(window.GetHWND())) {
         MessageBoxW(nullptr, L"Failed to initialize input manager!", L"Error", MB_ICONERROR);
         return -1;
     }
 
-    // Background (render order 0 - renders first)
-    SpriteInstance background("assets/bg3.png", D3DXVECTOR3(0, 0, 0), 0);
-    renderer.AddRenderItem(background);
+    //// Background (render order 0 - renders first)
+    //SpriteInstance background("assets/bg3.png", D3DXVECTOR3(0, 0, 0), 0);
+    //renderer.AddRenderItem(background);
 
     // Paddle (render order 1 - renders on top of background)
     SpriteInstance paddle("assets/singlePaddle.png", D3DXVECTOR3(400, 500, 0), 1);
@@ -57,7 +59,8 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     ball.scale = D3DXVECTOR3(0.5f, 0.5f, 1.0f); // Make ball smaller
     renderer.AddRenderItem(ball);
 
-    SpriteInstance militia("assets/militia.png", D3DXVECTOR3(600, 400, 0), 2, 4, 4, 16, 0.1f, true, true);
+    SpriteInstance militia("assets/militia.png", D3DXVECTOR3(600, 400, 0), 2, 4, 4, 4, 0.1f, true, true);
+    militia.SetState(3);
     renderer.AddRenderItem(militia);
 
     // Game variables for ball movement

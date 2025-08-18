@@ -14,7 +14,7 @@ public:
 	Renderer();
 	~Renderer();
 	bool Initialize(HWND hWnd, int width, int height);
-	bool LoadTexture(const std::string& path);
+	bool LoadTexture(const std::string& path, int logicalWidth = 0, int logicalHeight = 0);
 	bool LoadTexturesBatch(const std::vector<std::string>& textureList);
 	// Update animation
 	void Update(float deltaTime);

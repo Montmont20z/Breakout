@@ -72,19 +72,19 @@ void InputManager::Update() {
 
     if (diKeys[DIK_UP] & 0x80)
     {
-        std::cout << "UP" << std::endl;
+        //std::cout << "UP" << std::endl;
     }
     if (diKeys[DIK_DOWN] & 0x80)
     {
-        std::cout << "DOWN" << std::endl;
+        //std::cout << "DOWN" << std::endl;
     }
     if (diKeys[DIK_LEFT] & 0x80)
     {
-        std::cout << "LEFT" << std::endl;
+        //std::cout << "LEFT" << std::endl;
     }
     if (diKeys[DIK_RIGHT] & 0x80)
     {
-        std::cout << "RIGHT" << std::endl;
+        //std::cout << "RIGHT" << std::endl;
     }
 
     

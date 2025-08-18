@@ -1,6 +1,7 @@
 #include "headers/Renderer.h"
 #include "headers/MyWindow.h"
 #include <chrono>
+#include <iostream>
 
 Renderer::Renderer() = default;
 
@@ -89,10 +90,14 @@ bool Renderer::Initialize(HWND hWnd, int width, int height) {
 
 }
 
-bool Renderer::LoadTexture(const std::string& path) {
-    // Check if already loaded
-    if (m_preloadedTextures.count(path))
+bool Renderer::LoadTexture(const std::string& path, int logicalWidth, int logicalHeight) {
+     // If already loaded, optionally update logical sizes
+    auto it = m_preloadedTextures.find(path);
+    if (it != m_preloadedTextures.end()) {
+        if (logicalWidth > 0) it->second.logicalWidth = logicalWidth;
+        if (logicalHeight > 0) it->second.logicalHeight = logicalHeight;
         return true;
+    }
 
     TextureData textureData = {};
     textureData.filename = path;
@@ -114,6 +119,10 @@ bool Renderer::LoadTexture(const std::string& path) {
     );
 
     if (SUCCEEDED(hr) && textureData.texture) {
+         // If caller provided logical sizes, use them. Otherwise default to actual texture size.
+        textureData.logicalWidth = (logicalWidth > 0) ? logicalWidth : textureData.info.Width;
+        textureData.logicalHeight = (logicalHeight > 0) ? logicalHeight : textureData.info.Height;
+
         m_preloadedTextures[path] = std::move(textureData);
         return true;
     }
@@ -143,20 +152,20 @@ void Renderer::Update(float deltaTime){
     for (auto& item : m_renderQueue) {
         // skip animation 
         if (!item.visible) continue;
-        if (item.frameCount <= 1) continue; // nothing to animate // no animation sprite
+        if (item.framesPerState <= 1) continue; // nothing to animate // no animation sprite
         if (!item.playing) continue;
 
         item.elapsedSinceFrame += deltaTime;
         // create animation base on time
         while (item.elapsedSinceFrame >= item.frameDuration && item.frameDuration > 0.0f) {
-            item.elapsedSinceFrame -= deltaTime;
+            item.elapsedSinceFrame -= item.frameDuration;
             item.currentFrame++;
-            if (item.currentFrame >= item.frameCount) {
+            if (item.currentFrame >= item.framesPerState) {
                 if (item.looping) {
                     item.currentFrame = 0;
                 }
                 else {
-                    item.currentFrame = item.frameCount - 1;
+                    item.currentFrame = item.framesPerState - 1;
                     item.playing = false; // stop at last frame
                     break;
                 }
@@ -237,9 +246,18 @@ void Renderer::Render() {
             const TextureData& textureData = textureIt->second;
 
             // Build the source RECT fot the current frame
+            // debug
+            std::cout << "tex W=" << textureData.info.Width << std::endl
+                << "H=" << textureData.info.Height << std::endl
+                << "rows= " << item.animationRows << "cols= " << item.animationCols << std::endl
+                << "frameW= " << textureData.info.Width / item.animationCols << "frameH= " << textureData.info.Height / item.animationRows << std::endl << std::endl;
+
             RECT srcRect = { 0,0,0,0 };
-            if (item.frameCount > 1 && textureData.info.Width > 0 && textureData.info.Height > 0) {
-                srcRect = item.GetSourceRect(textureData.info.Width, textureData.info.Height);
+            int logicalW = (textureData.logicalWidth > 0) ? textureData.logicalWidth : textureData.info.Width;
+            int logicalH = (textureData.logicalHeight> 0) ? textureData.logicalHeight: textureData.info.Height;
+            // use logical width, height if provided
+            if (item.framesPerState > 1 && logicalW > 0 && logicalH > 0) {
+                srcRect = item.GetSourceRect(logicalW, logicalH);
             }
             else {
                 // entire texture 
