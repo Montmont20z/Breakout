@@ -2,6 +2,7 @@
 #include "headers/Renderer.h"
 #include "headers/InputManager.h"
 #include <iostream>
+#include <chrono>
 
 const int SCREEN_WIDTH = 1000;
 const int SCREEN_HEIGHT = 600;
@@ -43,27 +44,36 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         return -1;
     }
 
-    // TODO: Extract into a class 
-    // Set up render queue with different layers and positions
     // Background (render order 0 - renders first)
-    RenderItem background("assets/bg3.png", D3DXVECTOR3(0, 0, 0), 0);
+    SpriteInstance background("assets/bg3.png", D3DXVECTOR3(0, 0, 0), 0);
     renderer.AddRenderItem(background);
 
     // Paddle (render order 1 - renders on top of background)
-    RenderItem paddle("assets/singlePaddle.png", D3DXVECTOR3(400, 500, 0), 1);
+    SpriteInstance paddle("assets/singlePaddle.png", D3DXVECTOR3(400, 500, 0), 1);
     renderer.AddRenderItem(paddle);
 
     // Ball (render order 2 - renders on top of everything)
-    RenderItem ball("assets/ball.png", D3DXVECTOR3(500, 300, 0), 2);
+    SpriteInstance ball("assets/ball.png", D3DXVECTOR3(500, 300, 0), 2);
     ball.scale = D3DXVECTOR3(0.5f, 0.5f, 1.0f); // Make ball smaller
     renderer.AddRenderItem(ball);
 
+    SpriteInstance militia("assets/militia.png", D3DXVECTOR3(600, 400, 0), 2, 4, 4, 16, 0.1f, true, true);
+    renderer.AddRenderItem(militia);
+
     // Game variables for ball movement
     float ballX = 500, ballY = 300;
-    float ballSpeedX = 2.0f, ballSpeedY = 2.0f;
+    float ballSpeedX = 5.0f, ballSpeedY = 5.0f;
     D3DXVECTOR3 currentBallPos(ballX, ballY, 0); // Track current position
 
+    // deltaTime variable
+    using clock = std::chrono::high_resolution_clock;
+    auto last = clock::now();
+
     while (window.ProcessMessages()) {
+		auto now = clock::now();
+		std::chrono::duration<float> elapsed = now - last;
+		last = now;
+		float deltaTime = elapsed.count(); // seconds since last frame	
         // Game update and render calls here
         inputManager.Update();
 
@@ -77,10 +87,11 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         if (ballY <= 0 || ballY >= SCREEN_HEIGHT - 32) ballSpeedY = -ballSpeedY;
 
         // Update ball position in render queue
-        RenderItem updatedBall("assets/ball.png", D3DXVECTOR3(ballX, ballY, 0), 2);
-        //updatedBall.scale = D3DXVECTOR3(0.5f, 0.5f, 1.0f);
+        SpriteInstance updatedBall("assets/ball.png", D3DXVECTOR3(ballX, ballY, 0), 2);
+        updatedBall.scale = D3DXVECTOR3(0.5f, 0.5f, 1.0f);
         renderer.UpdateRenderItem("assets/ball.png", currentBallPos, updatedBall);
 
+        renderer.Update(deltaTime);
         renderer.Render();
         
     }

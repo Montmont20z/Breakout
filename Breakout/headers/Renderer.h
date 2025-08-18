@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "MyWindow.h"
 #include "TextureData.h"
-#include "RenderItem.h"
+#include "SpriteInstance.h"
 
 
 class Renderer {
@@ -16,12 +16,14 @@ public:
 	bool Initialize(HWND hWnd, int width, int height);
 	bool LoadTexture(const std::string& path);
 	bool LoadTexturesBatch(const std::vector<std::string>& textureList);
+	// Update animation
+	void Update(float deltaTime);
 
 	// Render Queue
-	void AddRenderItem(const RenderItem& item);
+	void AddRenderItem(const SpriteInstance& item);
 	void RemoveRenderItem(const std::string& texturePath, const D3DXVECTOR3& position);
 	void ClearRenderQueue();
-	void UpdateRenderItem(const std::string& texturePath, const D3DXVECTOR3& oldPos, const RenderItem& newItem);
+	void UpdateRenderItem(const std::string& texturePath, const D3DXVECTOR3& oldPos, const SpriteInstance& newItem);
 
 	void Render();
 	IDirect3DDevice9* GetDevice();
@@ -33,7 +35,7 @@ private:
 	std::unordered_map<std::string, TextureData> m_preloadedTextures = {};
 	ID3DXSprite* m_spriteBrush = nullptr;
 
-	std::vector<RenderItem> m_renderQueue;
+	std::vector<SpriteInstance> m_renderQueue;
 
 	void SortRenderQueue();
 

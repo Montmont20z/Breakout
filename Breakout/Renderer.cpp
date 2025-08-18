@@ -1,5 +1,6 @@
 #include "headers/Renderer.h"
 #include "headers/MyWindow.h"
+#include <chrono>
 
 Renderer::Renderer() = default;
 
@@ -138,7 +139,35 @@ bool Renderer::LoadTexturesBatch(const std::vector<std::string>& textureList) {
     return allSuccessful;
 }
 
-void Renderer::AddRenderItem(const RenderItem& item) {
+void Renderer::Update(float deltaTime){
+    for (auto& item : m_renderQueue) {
+        // skip animation 
+        if (!item.visible) continue;
+        if (item.frameCount <= 1) continue; // nothing to animate // no animation sprite
+        if (!item.playing) continue;
+
+        item.elapsedSinceFrame += deltaTime;
+        // create animation base on time
+        while (item.elapsedSinceFrame >= item.frameDuration && item.frameDuration > 0.0f) {
+            item.elapsedSinceFrame -= deltaTime;
+            item.currentFrame++;
+            if (item.currentFrame >= item.frameCount) {
+                if (item.looping) {
+                    item.currentFrame = 0;
+                }
+                else {
+                    item.currentFrame = item.frameCount - 1;
+                    item.playing = false; // stop at last frame
+                    break;
+                }
+            }
+            
+        }
+
+    }
+}
+
+void Renderer::AddRenderItem(const SpriteInstance& item) {
     // Load texture if not already loaded
     if (m_preloadedTextures.find(item.texturePath) == m_preloadedTextures.end()) {
         LoadTexture(item.texturePath);
@@ -151,7 +180,7 @@ void Renderer::AddRenderItem(const RenderItem& item) {
 void Renderer::RemoveRenderItem(const std::string& texturePath, const D3DXVECTOR3& position) {
     m_renderQueue.erase(
         std::remove_if(m_renderQueue.begin(), m_renderQueue.end(),
-            [&](const RenderItem& item) {
+            [&](const SpriteInstance& item) {
                 return item.texturePath == texturePath &&
                     item.position.x == position.x &&
                     item.position.y == position.y &&
@@ -166,7 +195,7 @@ void Renderer::ClearRenderQueue() {
     m_renderQueue.clear();
 }
 
-void Renderer::UpdateRenderItem(const std::string& texturePath, const D3DXVECTOR3& oldPos, const RenderItem& newItem) {
+void Renderer::UpdateRenderItem(const std::string& texturePath, const D3DXVECTOR3& oldPos, const SpriteInstance& newItem) {
     for (auto& item : m_renderQueue) {
         if (item.texturePath == texturePath &&
             item.position.x == oldPos.x &&
@@ -181,7 +210,7 @@ void Renderer::UpdateRenderItem(const std::string& texturePath, const D3DXVECTOR
 
 void Renderer::SortRenderQueue() {
     std::sort(m_renderQueue.begin(), m_renderQueue.end(),
-        [](const RenderItem& a, const RenderItem& b) {
+        [](const SpriteInstance& a, const SpriteInstance& b) {
             if (a.renderOrder != b.renderOrder) {
                 return a.renderOrder < b.renderOrder; // Lower order renders first
             }
@@ -191,6 +220,7 @@ void Renderer::SortRenderQueue() {
 }
 
 void Renderer::Render() {
+    if (!m_d3dDevice) return;
     //	Clear the back buffer.
     m_d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 
@@ -203,33 +233,41 @@ void Renderer::Render() {
             if (!item.visible) continue;
 
             auto textureIt = m_preloadedTextures.find(item.texturePath);
-            if (textureIt != m_preloadedTextures.end() && textureIt->second.texture) {
-                const TextureData& textureData = textureIt->second;
+            if (textureIt == m_preloadedTextures.end()) continue; // return control to game loop if there is nothing in render queue
+            const TextureData& textureData = textureIt->second;
 
-                // Create transformation matrix
-                D3DXMATRIX transform, scaleMatrix, rotationMatrix, translationMatrix;
-                D3DXMatrixIdentity(&transform);
-
-                // Apply transformation matrix
-                D3DXMatrixScaling(&scaleMatrix, item.scale.x, item.scale.y, item.scale.z);
-                D3DXMatrixRotationZ(&rotationMatrix, item.rotation);
-                D3DXMatrixTranslation(&translationMatrix, item.position.x, item.position.y, item.position.z);
-
-                transform = scaleMatrix * rotationMatrix * translationMatrix;
-                m_spriteBrush->SetTransform(&transform);
-
-                m_spriteBrush->Draw(
-                    textureData.texture, 
-                    nullptr,  // Source rectangle (null = entire texture)
-                    nullptr,  // Center point (null = top-left)
-                    nullptr,  // Position (handled by transform matrix)
-                    item.color
-                );
-
-
+            // Build the source RECT fot the current frame
+            RECT srcRect = { 0,0,0,0 };
+            if (item.frameCount > 1 && textureData.info.Width > 0 && textureData.info.Height > 0) {
+                srcRect = item.GetSourceRect(textureData.info.Width, textureData.info.Height);
+            }
+            else {
+                // entire texture 
+                srcRect.left = 0;
+                srcRect.top = 0;
+                srcRect.right = textureData.info.Width;
+                srcRect.bottom = textureData.info.Height;
             }
 
+			// Create transformation matrix
+			D3DXMATRIX transform, scaleMatrix, rotationMatrix, translationMatrix;
+			D3DXMatrixIdentity(&transform);
 
+			// Apply transformation matrix
+			D3DXMatrixScaling(&scaleMatrix, item.scale.x, item.scale.y, item.scale.z);
+			D3DXMatrixRotationZ(&rotationMatrix, item.rotation);
+			D3DXMatrixTranslation(&translationMatrix, item.position.x, item.position.y, item.position.z);
+
+			transform = scaleMatrix * rotationMatrix * translationMatrix;
+			m_spriteBrush->SetTransform(&transform);
+
+			m_spriteBrush->Draw(
+				textureData.texture, 
+				&srcRect,  // Source rectangle (null = entire texture)
+				nullptr,  // Center point (null = top-left)
+				nullptr,  // Position (handled by transform matrix)
+				item.color
+			);
         }
 
         // Reset transform
@@ -244,8 +282,6 @@ void Renderer::Render() {
         MessageBox(nullptr, L"Fail to begin scene", L"Error", MB_ICONERROR);
         return;
     }
-
-
 
     m_d3dDevice->Present(NULL, NULL, NULL, NULL);
 }

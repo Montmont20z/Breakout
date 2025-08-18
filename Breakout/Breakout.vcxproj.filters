@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MyWindow.cpp">
@@ -44,7 +44,7 @@
     <ClInclude Include="headers\InputManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers\RenderItem.h">
+    <ClInclude Include="headers\SpriteInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,6 +62,12 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="assets\bg3.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\militia.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\rock.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
