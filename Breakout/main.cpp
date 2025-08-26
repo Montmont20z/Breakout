@@ -1,6 +1,7 @@
 #include "headers/MyWindow.h"
 #include "headers/Renderer.h"
 #include "headers/InputManager.h"
+#include "headers/PhysicsBody.h" 
 #include <iostream>
 #include <chrono>
 
@@ -11,6 +12,80 @@ const int SCREEN_HEIGHT = 600;
 #pragma comment(lib, "dxguid.lib")
 
 using namespace std;
+
+// TO REMOVE --------------------------------------------------------------------
+// Simple circle collision (very small, easy to understand)
+void SimpleResolveCircleCollision(SpriteInstance& A_spr, PhysicsBody& A_body,
+                                  SpriteInstance& B_spr, PhysicsBody& B_body,
+                                  float restitution = 0.6f) // 0..1, 1 = perfectly elastic
+{
+    // centers (assumes sprite.position is the center)
+    float ax = A_spr.position.x;
+    float ay = A_spr.position.y;
+    float bx = B_spr.position.x;
+    float by = B_spr.position.y;
+
+    float dx = bx - ax;
+    float dy = by - ay;
+    float dist2 = dx*dx + dy*dy;
+    float rSum = A_body.radius + B_body.radius;
+    if (dist2 >= rSum * rSum) return; // no collision
+
+    float dist = sqrtf(dist2);
+    // avoid division by zero
+    D3DXVECTOR3 normal;
+    if (dist > 1e-6f) {
+        normal = D3DXVECTOR3(dx / dist, dy / dist, 0.0f);
+    } else {
+        // perfectly overlapping; choose arbitrary normal
+        normal = D3DXVECTOR3(1.0f, 0.0f, 0.0f);
+        dist = 0.0f;
+    }
+
+    // penetration and simple positional correction (split by mass)
+    float penetration = rSum - dist;
+    float invMassA = (A_body.mass > 0.0f) ? 1.0f / A_body.mass : 0.0f;
+    float invMassB = (B_body.mass > 0.0f) ? 1.0f / B_body.mass : 0.0f;
+    float invSum = invMassA + invMassB;
+    if (invSum > 0.0f) {
+        // move them out so they no longer overlap
+        D3DXVECTOR3 correction = D3DXVECTOR3(normal.x * (penetration / invSum),
+                                             normal.y * (penetration / invSum),
+                                             0.0f);
+        // heavier object moves less
+        A_spr.position.x -= correction.x * invMassA;
+        A_spr.position.y -= correction.y * invMassA;
+        B_spr.position.x += correction.x * invMassB;
+        B_spr.position.y += correction.y * invMassB;
+    }
+
+    // relative velocity
+    D3DXVECTOR3 relVel = D3DXVECTOR3(B_body.velocity.x - A_body.velocity.x,
+                                     B_body.velocity.y - A_body.velocity.y, 0.0f);
+    float velAlongNormal = relVel.x * normal.x + relVel.y * normal.y;
+
+    // if moving apart already, no impulse needed
+    if (velAlongNormal > 0.0f) return;
+
+    // compute impulse scalar (very simple)
+    float e = restitution;
+    float j = 0.0f;
+    if (invSum > 0.0f) {
+        j = -(1.0f + e) * velAlongNormal / invSum;
+    }
+
+    // apply impulse
+    D3DXVECTOR3 impulse = D3DXVECTOR3(normal.x * j, normal.y * j, 0.0f);
+    if (A_body.mass > 0.0f) {
+        A_body.velocity.x -= impulse.x * invMassA;
+        A_body.velocity.y -= impulse.y * invMassA;
+    }
+    if (B_body.mass > 0.0f) {
+        B_body.velocity.x += impulse.x * invMassB;
+        B_body.velocity.y += impulse.y * invMassB;
+    }
+}
+// --------------------------------------------------------------------------
 
 // Assets to be preload
 std::vector<std::string> textureList = {
@@ -56,6 +131,9 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
     SpriteInstance spaceship("assets/practical9.png", D3DXVECTOR3(200, 200, 0), 2, 2, 2, 2,0.1f, true, true);
     renderer.AddRenderItem(spaceship);
+	SpriteInstance spaceship2("assets/practical9.png", D3DXVECTOR3(400, 200, 0), 2, 2, 2, 2,0.1f, true, true);
+    spaceship2.SetState(1); // white spaceship
+    renderer.AddRenderItem(spaceship2);
 
     // Ball (render order 2 - renders on top of everything)
     SpriteInstance ball("assets/ball.png", D3DXVECTOR3(500, 300, 0), 2);
@@ -63,8 +141,6 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     renderer.AddRenderItem(ball);
 
     SpriteInstance militia("assets/militia.png", D3DXVECTOR3(600, 400, 0), 2, 4, 4, 4, 0.1f, true, true);
-    //militia.id = 1;
-    //militia.SetState(0);
     renderer.AddRenderItem(militia);
 
     // Game variables for ball movement
@@ -73,12 +149,11 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     D3DXVECTOR3 currentBallPos(ballX, ballY, 0); // Track current position
 
     // Spaceship variable
-    D3DXVECTOR3 player1EngineForce = D3DXVECTOR3(0,0,0);
-	float player1EnginePower = 1.0f;
-	float player1Mass = 1;
-	D3DXVECTOR3 player1Accerlation = D3DXVECTOR3(0,0,0);
-	D3DXVECTOR3 player1Velocity = D3DXVECTOR3(0,0,0);
-
+    PhysicsBody shipBody;
+    shipBody.mass = 1.0f;
+	// Spaceship 2 variable
+    PhysicsBody shipBody2;
+    shipBody2.mass = 1.0f;
 
     // deltaTime variable
     using clock = std::chrono::high_resolution_clock;
@@ -116,21 +191,51 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
             moved = true;
         }
 
-        player1EngineForce = D3DXVECTOR3(0, 0, 0); // reset engine force
         if (inputManager.IsKeyDown(DIK_A)) {
             spaceship.rotation -= 0.1f;
         } else if (inputManager.IsKeyDown(DIK_D)) {
             spaceship.rotation += 0.1f;
         }else if (inputManager.IsKeyDown(DIK_W)) {
-            player1EngineForce.x = sin(spaceship.rotation) * player1EnginePower;
-            player1EngineForce.y = -cos(spaceship.rotation) * player1EnginePower;
+            D3DXVECTOR3 thrust;
+            float thrustPower = 1000.0f;
+            thrust.x = sinf(spaceship.rotation) * thrustPower;
+            thrust.y = -cosf(spaceship.rotation) * thrustPower;
+            shipBody.ApplyForce(thrust);
         }
-        // Update spaceship position every frame
-        player1Accerlation = player1EngineForce / player1Mass;
-        player1Velocity = player1Velocity + player1Accerlation;
-        spaceship.position = spaceship.position + player1Velocity;
+		if (inputManager.IsKeyDown(DIK_J)) {
+            spaceship2.rotation -= 0.1f;
+        } else if (inputManager.IsKeyDown(DIK_L)) {
+            spaceship2.rotation += 0.1f;
+        }else if (inputManager.IsKeyDown(DIK_I)) {
+            D3DXVECTOR3 thrust;
+            float thrustPower = 1000.0f;
+            thrust.x = sinf(spaceship2.rotation) * thrustPower;
+            thrust.y = -cosf(spaceship2.rotation) * thrustPower;
+            shipBody2.ApplyForce(thrust);
+        }
 
+        shipBody.UpdatePhysics(deltaTime);
+        spaceship.position.x += shipBody.velocity.x * deltaTime;
+        spaceship.position.y += shipBody.velocity.y * deltaTime;
 
+        shipBody2.UpdatePhysics(deltaTime);
+        spaceship2.position.x += shipBody2.velocity.x * deltaTime;
+        spaceship2.position.y += shipBody2.velocity.y * deltaTime;
+        
+        SimpleResolveCircleCollision(spaceship, shipBody, spaceship2, shipBody2, 0.0f);
+
+        if (spaceship.position.x >= SCREEN_WIDTH || spaceship.position.x <= 0) {
+            shipBody.velocity.x = -shipBody.velocity.x;
+        }
+        if (spaceship.position.y >= SCREEN_HEIGHT || spaceship.position.y <= 0) {
+            shipBody.velocity.y = -shipBody.velocity.y;
+        }
+		if (spaceship2.position.x >= SCREEN_WIDTH || spaceship2.position.x <= 0) {
+            shipBody2.velocity.x = -shipBody2.velocity.x;
+        }
+        if (spaceship2.position.y >= SCREEN_HEIGHT || spaceship2.position.y <= 0) {
+            shipBody2.velocity.y = -shipBody2.velocity.y;
+        }
 
 		// Only change state if different
 		static int lastMilitiaState = militia.state;
@@ -141,6 +246,7 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 		}
         renderer.UpdateRenderItem(militia);
         renderer.UpdateRenderItem(spaceship);
+        renderer.UpdateRenderItem(spaceship2);
 
         //// Update ball position
         //currentBallPos = D3DXVECTOR3(ballX, ballY, 0);
