@@ -2,6 +2,7 @@
 #include "headers/Renderer.h"
 #include "headers/InputManager.h"
 #include "headers/PhysicsBody.h" 
+#include "SoundManager.h"
 #include <iostream>
 #include <chrono>
 
@@ -35,7 +36,7 @@ void SimpleResolveCircleCollision(SpriteInstance& A_spr, PhysicsBody& A_body,
     // avoid division by zero
     D3DXVECTOR3 normal;
     if (dist > 1e-6f) {
-        normal = D3DXVECTOR3(dx / dist, dy / dist, 0.0f);
+        normal = D3DXVECTOR3(dx / dist, dy / dist, 0.0f); // this get unit vector of normal
     } else {
         // perfectly overlapping; choose arbitrary normal
         normal = D3DXVECTOR3(1.0f, 0.0f, 0.0f);
@@ -62,7 +63,8 @@ void SimpleResolveCircleCollision(SpriteInstance& A_spr, PhysicsBody& A_body,
     // relative velocity
     D3DXVECTOR3 relVel = D3DXVECTOR3(B_body.velocity.x - A_body.velocity.x,
                                      B_body.velocity.y - A_body.velocity.y, 0.0f);
-    float velAlongNormal = relVel.x * normal.x + relVel.y * normal.y;
+    // dot product to project vector onto the normal
+    float velAlongNormal = relVel.x * normal.x + relVel.y * normal.y; // dot product between vector and normal,  v . n
 
     // if moving apart already, no impulse needed
     if (velAlongNormal > 0.0f) return;
@@ -158,6 +160,12 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     // deltaTime variable
     using clock = std::chrono::high_resolution_clock;
     auto last = clock::now();
+
+    SoundManager* soundManager = new SoundManager();
+    soundManager->InitializeAudio();
+    soundManager->LoadSounds();
+    soundManager->PlaySound1();
+    soundManager->PlaySoundTrack();
 
     while (window.ProcessMessages()) {
         // get delta time

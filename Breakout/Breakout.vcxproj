@@ -75,8 +75,8 @@
     <LibraryPath>$(DXSDK_DIR)lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(DXSDK_DIR)include\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(DXSDK_DIR)include\;$(IncludePath);C:\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\core\inc</IncludePath>
+    <LibraryPath>$(DXSDK_DIR)lib\x86;$(LibraryPath);C:\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\core\lib\x86</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,7 +92,7 @@
       <AdditionalDependencies>d3d9.lib;
 d3dx9.lib;user32.lib
 ;gdi32.lib
-;dinput8.lib;dxguid.lib;</AdditionalDependencies>
+;dinput8.lib;dxguid.lib;fmod_vc.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -140,6 +140,7 @@ d3dx9.lib;user32.lib
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MyWindow.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SoundManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="example.txt" />
@@ -151,6 +152,7 @@ d3dx9.lib;user32.lib
     <ClInclude Include="headers\Renderer.h" />
     <ClInclude Include="headers\SpriteInstance.h" />
     <ClInclude Include="headers\TextureData.h" />
+    <ClInclude Include="SoundManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\bg2.png" />
@@ -165,6 +167,10 @@ d3dx9.lib;user32.lib
   <ItemGroup>
     <Media Include="assets\ctr_ingame.mp3" />
     <Media Include="assets\ctr_title.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\..\..\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\core\lib\x86\fmod.dll" />
+    <None Include="..\..\..\..\..\..\Program Files (x86)\FMOD SoundSystem\FMOD Studio API Windows\api\core\lib\x86\fmodL.dll" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
