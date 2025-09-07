@@ -38,6 +38,7 @@ public:
 	void DrawSprite(const SpriteInstance& sprite);
 
 	int CreateSolidTexture(D3DCOLOR argb);
+	int m_drawsThisFrame = 0;
 
 private:
 	D3DPRESENT_PARAMETERS m_d3dPP = {};

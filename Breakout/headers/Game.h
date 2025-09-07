@@ -41,5 +41,7 @@ public:
 	void Run();
 	void CleanUp();
 	void ChangeState(std::unique_ptr<IGameState> next);
+	int GetScreenWidth();
+	int GetScreenHeight();
 };
 

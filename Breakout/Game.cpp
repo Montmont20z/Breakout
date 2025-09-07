@@ -82,3 +82,10 @@ void Game::ChangeState(std::unique_ptr<IGameState> next)
         m_gameState->OnEnter(svc);
     }
 }
+
+int Game::GetScreenWidth() {
+    return m_screenWidth;
+}
+int Game::GetScreenHeight() {
+    return m_screenHeight;
+}

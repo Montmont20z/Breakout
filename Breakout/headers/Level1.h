@@ -11,14 +11,20 @@ public:
 	void Update(float dt, InputManager&, PhysicsManager&, SoundManager&) override;
 	void Render(Renderer& renderer) override;
 private:
-    bool inited_ = false;
-    int  whiteTex_ = 0;
+    bool m_isInitialized = false;
+    int  m_whiteTex = 0;
     SpriteInstance corner_[4];
     SpriteInstance center_;
     SpriteInstance overA_, overB_; // for layering & alpha
     float angle_ = 0.0f;
 
-	int  paddleTexId_ = 0;
-    SpriteInstance singlePaddle_;
+    SpriteInstance m_bricksList[40];
+    SpriteInstance m_redBrick;
+    SpriteInstance m_blueBrick;
+
+	//int  paddleTexId_ = 0;
+    SpriteInstance m_singlePaddle;
+    SpriteInstance m_background;
+    SpriteInstance m_ball;
 };
 

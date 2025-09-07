@@ -93,6 +93,7 @@ bool Renderer::Initialize(HWND hWnd, int width, int height) {
 void Renderer::DrawSprite(const SpriteInstance& sprite)
 {
     if (sprite.textureId == -1) return; // dont draw sprite id that is negative // negvative means invalid sprite
+    if (!sprite.visible) return; // dont draw if not visible
 
     const auto currentSprite = m_texturesById.find(sprite.textureId);
     if (currentSprite == m_texturesById.end() || !currentSprite->second.texture) return;
@@ -128,6 +129,8 @@ void Renderer::BeginFrame() {
     m_d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
     m_d3dDevice->BeginScene();
     m_spriteBrush->Begin(D3DXSPRITE_ALPHABLEND);
+    D3DXMATRIX I; D3DXMatrixIdentity(&I);
+    m_spriteBrush->SetTransform(&I);
 }
 
 void Renderer::EndFrame() {
