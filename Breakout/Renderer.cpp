@@ -94,10 +94,44 @@ void Renderer::DrawSprite(const SpriteInstance& sprite)
 {
     const auto currentSprite = m_textures.find(sprite.textureId);
     if (currentSprite == m_textures.end() || !currentSprite->second.texture) return;
+    const TextureData& tex = currentSprite->second;
 
-    //const RECT srcRect = sprite.CurrentFrameRect();
-    const D3DXVECTOR3 pos = sprite.position;
+    // get logical width, if not get original width
+    const int logicalW = (tex.logicalWidth > 0) ? tex.logicalWidth : tex.info.Width;
+    const int logicalH = (tex.logicalHeight > 0) ? tex.logicalHeight: tex.info.Height;
 
+    const RECT srcRect = sprite.GetSourceRect(logicalW, logicalH);
+
+    // per-frame dimensions (for origin/pivot
+    const int frameW = (sprite.animationCols > 0) ? (logicalW / sprite.animationCols) : logicalW;
+    const int frameH = (sprite.animationRows > 0) ? (logicalH / sprite.animationRows) : logicalH;
+    // get center
+    const D3DXVECTOR3 center(float(frameW) * 0.5f, float(frameH) * 0.5f, 0.0f);
+
+    // Transform
+	D3DXMATRIX mToOrigin, mScale, mRot, mTranslate, mWorld;
+    D3DXMatrixTranslation(&mToOrigin, -center.x, -center.y, 0.0f);
+    D3DXMatrixScaling(&mScale, sprite.scale.x, sprite.scale.y, sprite.scale.z);
+    D3DXMatrixRotationZ(&mRot, sprite.rotation);
+    D3DXMatrixTranslation(&mTranslate, sprite.position.x, sprite.position.y, sprite.position.z);
+    mWorld = mToOrigin * mScale * mRot * mTranslate;
+
+    m_spriteBrush->SetTransform(&mWorld);
+    m_spriteBrush->Draw(tex.texture, &srcRect, nullptr, nullptr, sprite.color);
+
+
+}
+
+void Renderer::BeginFrame() {
+    m_d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+    m_d3dDevice->BeginScene();
+    m_spriteBrush->Begin(D3DXSPRITE_ALPHABLEND);
+}
+
+void Renderer::EndFrame() {
+	m_spriteBrush->End();
+	m_d3dDevice->EndScene();
+	m_d3dDevice->Present(nullptr,nullptr,nullptr,nullptr);
 }
 
 //bool Renderer::LoadTexture(const std::string& path, int logicalWidth, int logicalHeight) {
@@ -381,3 +415,26 @@ void Renderer::DrawSprite(const SpriteInstance& sprite)
 //
 //    m_d3dDevice->Present(NULL, NULL, NULL, NULL);
 //}
+
+int Renderer::CreateSolidTexture(D3DCOLOR argb) {
+    IDirect3DTexture9* tex = nullptr;
+    if (FAILED(m_d3dDevice->CreateTexture(
+            1,1,1,0,D3DFMT_A8R8G8B8,D3DPOOL_MANAGED,&tex,nullptr))) return 0;
+
+    D3DLOCKED_RECT lr{};
+    if (SUCCEEDED(tex->LockRect(0,&lr,nullptr,0))) {
+        *reinterpret_cast<DWORD*>(lr.pBits) = argb;
+        tex->UnlockRect(0);
+    }
+    TextureData td;
+    td.texture = tex;
+    td.info.Width  = 1;
+    td.info.Height = 1;
+    td.logicalWidth  = 1;
+    td.logicalHeight = 1;
+
+    static int nextId = 1;
+    const int id = nextId++;
+    m_textures[id] = std::move(td);
+    return id;
+}

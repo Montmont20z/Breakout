@@ -37,6 +37,8 @@ public:
 	void EndFrame();
 	void DrawSprite(const SpriteInstance& sprite);
 
+	int CreateSolidTexture(D3DCOLOR argb);
+
 private:
 	D3DPRESENT_PARAMETERS m_d3dPP = {};
 	IDirect3D9* m_direct3D9 = nullptr;

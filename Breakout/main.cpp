@@ -123,6 +123,7 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
   //  return 0;
     Game game(hInstance, SCREEN_WIDTH, SCREEN_HEIGHT, nCmdShow);
     if (!game.Initialize()) {
+        cout << "Game failed to Initialize" << endl;
         return -1;
     }
     game.Run();

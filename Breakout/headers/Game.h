@@ -8,6 +8,8 @@
 #include "PhysicsManager.h"
 #include "SoundManager.h"
 
+class IGameState; class Level1;
+
 class Game
 {
 private:
@@ -43,5 +45,6 @@ public:
 	bool Initialize(); 
 	void Run();
 	void CleanUp();
+	void ChangeState(std::unique_ptr<IGameState> next);
 };
 

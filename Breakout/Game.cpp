@@ -1,8 +1,10 @@
 #include "headers/Game.h"
 #include "headers/InputManager.h"
 #include "headers/MyWindow.h"
+#include "headers/Level1.h"
 #include <iostream>
 #include <chrono>
+#include <memory>
 
 using namespace std;
 
@@ -23,11 +25,18 @@ bool Game::Initialize() {
         MessageBoxW(nullptr, L"Failed to create window!", L"Error", MB_ICONERROR);
         return false;
     }
+     if (!m_renderer.Initialize(m_window.GetHWND(), m_window.GetWidth(), m_window.GetHeight())) {
+        MessageBoxW(nullptr, L"Failed to initialize renderer!", L"Error", MB_ICONERROR);
+        return false;
+    }
     m_window.Show(m_nCmdShow);
     if (!m_inputManager.Initialize(m_window.GetHWND())) {
         MessageBoxW(nullptr, L"Failed to initialize input manager!", L"Error", MB_ICONERROR);
         return false;
     }
+
+    ChangeState(std::make_unique<Level1>());
+
     return true;
 }
 
@@ -45,12 +54,24 @@ void Game::Run()
         prev = now;
 
         m_inputManager.Update();
+        m_renderer.BeginFrame();
+		//m_gameState->Update(dt, m_inputManager, m_physicsManager, m_soundManager);
+        m_gameState->Render(m_renderer);
+        m_renderer.EndFrame();
 
-        //m_gameState->Update(dt, m_inputManager, m_physicsManager, m_soundManager);
+
+
 
     }
 }
 
 void Game::CleanUp()
 {
+}
+
+void Game::ChangeState(std::unique_ptr<IGameState> next)
+{
+    if (m_gameState) m_gameState->OnExit();
+    m_gameState = std::move(next);
+    if (m_gameState) m_gameState->OnEnter();
 }

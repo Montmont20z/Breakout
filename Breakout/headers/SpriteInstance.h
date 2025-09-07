@@ -100,4 +100,26 @@ public:
 		if (resetFrame) currentFrame = 0;
 		elapsedSinceFrame = 0.0f;
 	}
+
+	void UpdateAnimation(float dt) {
+		if (!visible) return;
+		if (framesPerState <= 1) return;   // no animation
+		if (!playing) return;
+
+		elapsedSinceFrame += dt;
+		while (elapsedSinceFrame >= frameDuration && frameDuration > 0.0f) {
+			elapsedSinceFrame -= frameDuration;
+			++currentFrame;
+			if (currentFrame >= framesPerState) {
+				if (looping) {
+					currentFrame = 0;
+				}
+				else {
+					currentFrame = framesPerState - 1;
+					playing = false; // stop at last frame
+					break;
+				}
+			}
+		}
+	}
 };
