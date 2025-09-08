@@ -18,11 +18,10 @@ private:
     SpriteInstance overA_, overB_; // for layering & alpha
     float angle_ = 0.0f;
 
+    // Sprites in level
     SpriteInstance m_bricksList[40];
     SpriteInstance m_redBrick;
     SpriteInstance m_blueBrick;
-
-	//int  paddleTexId_ = 0;
     SpriteInstance m_singlePaddle;
     SpriteInstance m_background;
     SpriteInstance m_ball;

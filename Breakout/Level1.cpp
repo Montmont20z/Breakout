@@ -9,30 +9,43 @@ using namespace std;
 static D3DXVECTOR3 makePos(float x, float y) { return D3DXVECTOR3(x, y, 0); }
 
 bool Level1::OnEnter(const GameServices& services) {
+
+    // Load Bricks
     m_whiteTex = services.renderer.CreateSolidTexture(D3DCOLOR_ARGB(255, 255, 255, 255));
+
+    // Brick ordering variable
     const float brickWidth = 64.f, brickHeight = 32.f;
+    const float columnCount = 10.f, rowCount = 2.f, gap = 2.f;
+    // ========================
     m_redBrick.textureHandle = m_whiteTex;
-    m_redBrick.scale = D3DXVECTOR3(brickWidth, brickHeight, 1);
+    m_redBrick.scale = D3DXVECTOR3(brickWidth, brickHeight, 0);
     m_redBrick.color = D3DCOLOR_ARGB(255, 255, 0, 0); // red
-    m_redBrick.visible = true;
+    m_redBrick.visible = false;
 	m_redBrick.position = makePos(100, 100);
 	
-    cout << "redBrick Id: " << m_redBrick.id() << endl;
-
     float posX = 0, posY = 50;
-    for (int i = 0; i < 10; i++) {
-        posX += 70;
+    for (int i = 0; i < columnCount; i++) {
+        posX += brickWidth + gap;
         m_bricksList[i] = m_redBrick.CloneWithNewId();
         m_bricksList[i].position = makePos(posX, posY);
         m_bricksList[i].visible = true;
     }
 
+    // Load Bg
     m_background.textureHandle = services.renderer.LoadTexture("assets/bg2.png");
     m_background.position = { 500.0f, 300.0f, 0.f };
     
-    cout << "BG Id: " << m_background.id() << endl;
+    // Load Ball
+    m_ball.textureHandle = services.renderer.LoadTexture("assets/red_ball_transparent.png", 1024,1024);
+    m_ball.position = { 500.0f, 450.0f, 0.f };
+    m_ball.scale    = { 0.5f, 0.5f, 1.f };
+    m_ball.animationRows = 5;
+    m_ball.animationCols = 5;
+    m_ball.framesPerState = 5;
+    m_ball.playing = true;
     
 
+    // Load paddle
     m_singlePaddle.textureHandle = services.renderer.LoadTexture("assets/singlePaddle.png");
     m_singlePaddle.animationRows = 1;
     m_singlePaddle.animationCols = 1;
@@ -41,22 +54,15 @@ bool Level1::OnEnter(const GameServices& services) {
     m_singlePaddle.scale    = { 3.f, 1.f, 1.f };
     m_singlePaddle.color    = D3DCOLOR_XRGB(255,255,255);
 
-    cout << "Paddle Id: " << m_singlePaddle.id() << endl;
-	cout << "redBrick spriteId=" << m_redBrick.id()
-     << " texHandle=" << m_redBrick.textureHandle << endl;
-
-	cout << "Paddle spriteId=" << m_singlePaddle.id()
-     << " texHandle=" << m_singlePaddle.textureHandle << endl;
- 
-
     m_isInitialized = true;
     return true;
 
 }
 
 void Level1::Update(float dt, InputManager&, PhysicsManager&, SoundManager&) {
-    angle_ += dt;                        // spin ~1 rad/s
-    center_.rotation = angle_;
+    //angle_ += dt;                        // spin ~1 rad/s
+    //center_.rotation = angle_;
+    m_ball.UpdateAnimation(dt);
 }
 
 void Level1::Render(Renderer& renderer) {
@@ -95,10 +101,14 @@ void Level1::Render(Renderer& renderer) {
     //renderer.DrawSprite(center_);                   // spinning center
     //renderer.DrawSprite(overA_);                    // bottom magenta
     //renderer.DrawSprite(overB_);                    // top semi-transparent black
+
+    // Render order, first draw at back, last draw at front
 	renderer.DrawSprite(m_background);
 	renderer.DrawSprite(m_singlePaddle);
 	//renderer.DrawSprite(m_redBrick);
     for (auto& brick : m_bricksList) renderer.DrawSprite(brick);
+    renderer.DrawSprite(m_ball);
+
 
 
 
