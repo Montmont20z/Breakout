@@ -3,6 +3,7 @@
 #include "SpriteInstance.h"
 #include "inputManager.h"
 #include "PhysicsManager.h"
+#include "SoundManager.h"
 #include <d3dx9.h>
 #include <iostream>
 #include <dinput.h>
@@ -82,9 +83,17 @@ bool Level1::OnEnter(const GameServices& services) {
 
 }
 
-void Level1::Update(float dt, InputManager& inputManager, PhysicsManager& physicsManager, SoundManager&) {
+void Level1::Update(float dt, InputManager& inputManager, PhysicsManager& physicsManager, SoundManager& soundManager) {
+    // Change Game State
+    //ChangeState()
+    if (life == 0) {
+        soundManager.Play("gameover");
+    }
+    
+    
     // Update Animation Sprite
     m_ball.UpdateAnimation(dt);
+    soundManager.Update();
 
     const float screenW = 1000.f, screenH = 600.f;
 
@@ -133,11 +142,9 @@ void Level1::Update(float dt, InputManager& inputManager, PhysicsManager& physic
          m_ball.position = { 500.0f, 450.0f, 0.f };
          m_ballBody.velocity = BALL_INITIAL_VELOCITY;
 
+         soundManager.Play("damage");
          life--;
          cout << "Life Count: " << life << endl;
-
-
-
     }
 
     // --- 4) Ball vs Paddle AABB resolve (moving body vs static solid) ---
@@ -213,6 +220,7 @@ void Level1::Update(float dt, InputManager& inputManager, PhysicsManager& physic
 
 			// Remove the brick
 			m_bricksList[hitIndex].visible = false;
+            soundManager.Play("hit");
 
 			// Continue with remaining time
 			const float used = (bestToi > 0.0f) ? bestToi : 0.0f;
