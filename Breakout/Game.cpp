@@ -2,12 +2,15 @@
 #include "headers/InputManager.h"
 #include "headers/MyWindow.h"
 #include "headers/Level1.h"
+#include "headers/MenuState.h"
 #include <iostream>
 //#include <chrono>
 #include <memory>
 #include <GameServices.h>
 
 using namespace std;
+
+Game* g_game = nullptr;
 
 Game::Game(HINSTANCE hInstance, int width, int height, int nCmdShow)
     : hInstance(hInstance)
@@ -37,7 +40,7 @@ bool Game::Initialize() {
     }
 
 
-    ChangeState(std::make_unique<Level1>());
+    ChangeState(std::make_unique<MenuState>());
 
     return true;
 }

@@ -45,3 +45,5 @@ public:
 	int GetScreenHeight();
 };
 
+extern Game* g_game;
+

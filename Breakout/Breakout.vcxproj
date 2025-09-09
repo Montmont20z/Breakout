@@ -141,6 +141,7 @@ d3dx9.lib;user32.lib
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Level1.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MenuState.cpp" />
     <ClCompile Include="MyWindow.cpp" />
     <ClCompile Include="PhysicsManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
@@ -162,6 +163,7 @@ d3dx9.lib;user32.lib
     <ClInclude Include="headers\SoundManager.h" />
     <ClInclude Include="headers\PhysicsManager.h" />
     <ClInclude Include="headers\Level1.h" />
+    <ClInclude Include="headers\MenuState.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\bg2.png" />

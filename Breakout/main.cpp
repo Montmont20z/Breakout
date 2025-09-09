@@ -1,5 +1,5 @@
 #include "headers/Game.h"
-#include <iostream>
+#include <iostream> 
 
 const int SCREEN_WIDTH = 1000;
 const int SCREEN_HEIGHT = 600;
@@ -97,6 +97,9 @@ int main(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 
   //  return 0;
     Game game(hInstance, SCREEN_WIDTH, SCREEN_HEIGHT, nCmdShow);
+
+    g_game = &game;
+
     if (!game.Initialize()) {
         cout << "Game failed to Initialize" << endl;
         return -1;
