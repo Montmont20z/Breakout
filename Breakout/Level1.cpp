@@ -7,6 +7,7 @@
 #include <d3dx9.h>
 #include <iostream>
 #include <dinput.h>
+#include <sstream>
 
 using namespace std;
 
@@ -86,7 +87,7 @@ bool Level1::OnEnter(const GameServices& services) {
 void Level1::Update(float dt, InputManager& inputManager, PhysicsManager& physicsManager, SoundManager& soundManager) {
     // Change Game State
     //ChangeState()
-    if (life == 0) {
+    if (life <= 0) {
         soundManager.Play("gameover");
     }
     
@@ -240,6 +241,11 @@ void Level1::Render(Renderer& renderer) {
 	//renderer.DrawSprite(m_redBrick);
     for (auto& brick : m_bricksList) renderer.DrawSprite(brick);
     renderer.DrawSprite(m_ball);
+
+    // Draw Hud Text
+    std::wstringstream ss;
+    ss << L"Lives: " << life;
+    renderer.DrawTextString(ss.str(), 16, 12, D3DCOLOR_XRGB(255, 255, 255));
 
 
 }
