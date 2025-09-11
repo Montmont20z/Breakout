@@ -7,6 +7,7 @@
 #include "MyWindow.h"
 #include "TextureData.h"
 #include "SpriteInstance.h"
+#include <string>
 
 
 
@@ -38,19 +39,25 @@ public:
 	void DrawSprite(const SpriteInstance& sprite);
 
 	int CreateSolidTexture(D3DCOLOR argb);
+	bool CreateHudFont(int height = 20, const wchar_t* face = L"Arial");
+    void DrawTextString(const std::wstring& text, int x, int y, D3DCOLOR color);
 	int m_drawsThisFrame = 0;
 
 private:
+	// D3DX variable
 	D3DPRESENT_PARAMETERS m_d3dPP = {};
 	IDirect3D9* m_direct3D9 = nullptr;
 	IDirect3DDevice9* m_d3dDevice = nullptr;
 	ID3DXSprite* m_spriteBrush = nullptr;
+	ID3DXFont* m_hudFont = nullptr;
+
+
+	// texture variable
 	std::unordered_map<int, TextureData> m_texturesById; // id -> texture
 	std::unordered_map<std::string, int> m_texturesIdByPath; // path -> id
 	int m_nextTexId = 1;
 
 
-	//void SortRenderQueue();
 
 };
 

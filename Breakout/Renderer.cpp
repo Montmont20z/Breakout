@@ -2,6 +2,7 @@
 #include "headers/MyWindow.h"
 #include <chrono>
 #include <iostream>
+#include <string>
 
 Renderer::Renderer() = default;
 
@@ -14,6 +15,7 @@ Renderer::~Renderer() {
     //    }
     //}
     //m_preloadedTextures.clear();
+	if (m_hudFont) { m_hudFont->Release(); m_hudFont = nullptr; } // NEW
 
     if (m_spriteBrush) {
         m_spriteBrush->Release();
@@ -85,6 +87,9 @@ bool Renderer::Initialize(HWND hWnd, int width, int height) {
         MessageBoxW(nullptr, L"Failed to create sprite brush!", L"Error", MB_ICONERROR);
         return false;
     }
+    
+    // create a default HUD font 
+    CreateHudFont(22, L"Segoe UI");
 
     return true;
 
@@ -205,6 +210,25 @@ int Renderer::CreateSolidTexture(D3DCOLOR argb) {
     const int id = m_nextTexId++;
     m_texturesById[id] = std::move(td);
     return id;
+}
+
+bool Renderer::CreateHudFont(int height, const wchar_t* face) {
+    if (m_hudFont) { m_hudFont->Release(); m_hudFont = nullptr; }
+    HRESULT hr = D3DXCreateFontW(
+        m_d3dDevice,                 // your IDirect3DDevice9*
+        height, 0,                // height, width(0 = default)
+        FW_BOLD, 1, FALSE,        // weight, miplevels, italic
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+        ANTIALIASED_QUALITY, DEFAULT_PITCH, face,
+        &m_hudFont
+    );
+    return SUCCEEDED(hr);
+}
+
+void Renderer::DrawTextString(const std::wstring& text, int x, int y, D3DCOLOR color) {
+    if (!m_hudFont) return;
+    RECT rc{ x, y, x + 1000, y + 200 }; // big enough box; clip if needed
+    m_hudFont->DrawTextW(nullptr, text.c_str(), -1, &rc, DT_LEFT | DT_TOP, color);
 }
 
 //
