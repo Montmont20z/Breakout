@@ -7,13 +7,13 @@
 #include <iostream>
 
 bool MenuState::OnEnter(const GameServices& services) {
-    m_background.textureHandle = services.renderer.LoadTexture("assets/menu_bg.png");
+    m_background.textureHandle = services.renderer.LoadTexture("assets/menu_bg.jpg");
     m_background.position = { 500.f, 300.f, 0.f };
 
-    m_titleText.textureHandle = services.renderer.LoadTexture("assets/title.png");
+    m_titleText.textureHandle = services.renderer.LoadTexture("assets/title.png", 130, 40);
     m_titleText.position = { 500.f, 150.f, 0.f };
 
-    m_startText.textureHandle = services.renderer.LoadTexture("assets/start_text.png");
+    m_startText.textureHandle = services.renderer.LoadTexture("assets/start_text.png", 140, 40);
     m_startText.position = { 500.f, 400.f, 0.f };
 
     m_isInitialized = true;
