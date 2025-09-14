@@ -69,6 +69,9 @@ bool InputManager::Initialize(HWND hWnd) {
 }
 
 void InputManager::Update() {
+
+    
+
     // copy current keys to prev keys
     memcpy(m_keysPrev, m_keysCurrent, sizeof(m_keysCurrent));
     ZeroMemory(m_keysCurrent, sizeof(m_keysCurrent)); // clean up current buffer

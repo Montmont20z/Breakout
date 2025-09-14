@@ -39,4 +39,5 @@ private:
 	DIMOUSESTATE m_mousePrev{};
 	int m_mouseX = 0;
 	int m_mouseY = 0;
+	float m_playTexW = 1024.f, m_playTexH = 1024.f;
 };

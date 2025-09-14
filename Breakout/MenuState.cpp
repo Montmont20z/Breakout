@@ -7,6 +7,16 @@
 #include <dinput.h>
 #include <iostream>
 
+
+struct RectF { float l, t, r, b; };
+static RectF MakeAABB(const D3DXVECTOR3& center, const D3DXVECTOR3& scale, float w, float h) {
+    const float hw = 0.5f * w * scale.x, hh = 0.5f * h * scale.y;
+    return { center.x - hw, center.y - hh, center.x + hw, center.y + hh };
+}
+static bool PtInRectF(float x, float y, const RectF& r) {
+    return x >= r.l && x <= r.r && y >= r.t && y <= r.b;
+}
+
 bool MenuState::OnEnter(const GameServices& services) {
     m_background.textureHandle = services.renderer.LoadTexture("assets/menu_bg.jpg");
     m_background.position = { 500.f, 300.f, 0.f };
@@ -47,13 +57,30 @@ void MenuState::OnExit(const GameServices& services) {
 }
 
 void MenuState::Update(float dt, InputManager& input, PhysicsManager&, SoundManager& sound) {
+
+    if (input.IsMousePressed(0)) {  // 0 = left mouse button
+        int mx = input.GetMouseX();
+        int my = input.GetMouseY();
+        std::cout << "Left mouse clicked at (" << mx << ", " << my << ")\n";
+
+        // Play button center + half extents
+        float cx = m_playButton.position.x;
+        float cy = m_playButton.position.y;
+        float halfW = m_playHalf.x;
+        float halfH = m_playHalf.y;
+
+        // Check if mouse is inside the button rectangle
+        if (mx >= cx - halfW && mx <= cx + halfW &&
+            my >= cy - halfH && my <= cy + halfH)
+        {
+            extern Game* g_game;
+            g_game->ChangeState(std::make_unique<Level1>());
+            return;
+        }
+    }
+
     if (input.IsKeyPressed(DIK_RETURN)) { 
         extern Game* g_game;               
-        g_game->LoadLevel(1);
-        return;
-    }
-    if (input.IsMousePressed(0)) {
-        extern Game* g_game;
         g_game->LoadLevel(1);
         return;
     }
