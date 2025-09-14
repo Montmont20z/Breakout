@@ -11,13 +11,15 @@ public:
     void Update(float dt, InputManager& input, PhysicsManager&, SoundManager&) override;
     void Render(Renderer& renderer) override;
 
-
+    
 private:
     SpriteInstance m_background;
     SpriteInstance m_titleText;
     SpriteInstance m_playButton;
     D3DXVECTOR2    m_playHalf{ 70.f, 20.f };
     bool m_isInitialized = false;
+    bool m_lmbPrev = false;
+    float m_playTexW = 1024.f, m_playTexH = 1024.f; 
 
     // ball
 	SpriteInstance m_ball;
