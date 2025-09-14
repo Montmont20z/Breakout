@@ -10,9 +10,13 @@ public:
     void Update(float dt, InputManager& input, PhysicsManager&, SoundManager&) override;
     void Render(Renderer& renderer) override;
 
+
 private:
     SpriteInstance m_background;
     SpriteInstance m_titleText;
-    SpriteInstance m_startText;
+    SpriteInstance m_playButton;
+    D3DXVECTOR2    m_playHalf{ 70.f, 20.f };
     bool m_isInitialized = false;
+
+    
 };

@@ -84,6 +84,23 @@ void InputManager::Update() {
         }
         // if still failing, leave m_keysCurrent zeroed (no keys pressed)
         cout << "Failed to get keyboard device state" << endl;
+
+        m_mousePrev = m_mouseCurrent;
+        ZeroMemory(&m_mouseCurrent, sizeof(m_mouseCurrent));
+        if (m_dInputMouseDevice) {
+            HRESULT hr = m_dInputMouseDevice->GetDeviceState(sizeof(DIMOUSESTATE), &m_mouseCurrent);
+            if (FAILED(hr)) {
+                m_dInputMouseDevice->Acquire();
+            }
+            else {
+                m_mouseX += m_mouseCurrent.lX;
+                m_mouseY += m_mouseCurrent.lY;
+                if (m_mouseX < 0) m_mouseX = 0;
+                if (m_mouseY < 0) m_mouseY = 0;
+                if (m_mouseX > 1000) m_mouseX = 1000; // clamp to screen
+                if (m_mouseY > 600)  m_mouseY = 600;
+            }
+        }
     }
 }
 
@@ -93,4 +110,14 @@ bool InputManager::IsKeyDown(unsigned char diKey) const {
 
 bool InputManager::IsKeyPressed(unsigned char diKey) const {
     return ((m_keysCurrent[diKey] & 0x80) != 0) && ((m_keysPrev[diKey] & 0x80) == 0);
+}
+
+bool InputManager::IsMouseDown(int button) const {
+    if (button < 0 || button > 2) return false;
+    return (m_mouseCurrent.rgbButtons[button] & 0x80) != 0;
+}
+bool InputManager::IsMousePressed(int button) const {
+    if (button < 0 || button > 2) return false;
+    return ((m_mouseCurrent.rgbButtons[button] & 0x80) != 0) &&
+        ((m_mousePrev.rgbButtons[button] & 0x80) == 0);
 }
