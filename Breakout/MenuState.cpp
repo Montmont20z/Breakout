@@ -46,7 +46,7 @@ void MenuState::OnExit(const GameServices& services) {
     services.soundManager.StopAll();
 }
 
-void MenuState::Update(float dt, InputManager& input, PhysicsManager&, SoundManager&) {
+void MenuState::Update(float dt, InputManager& input, PhysicsManager&, SoundManager& sound) {
     if (input.IsKeyPressed(DIK_RETURN)) { 
         extern Game* g_game;               
         g_game->LoadLevel(1);
@@ -56,6 +56,16 @@ void MenuState::Update(float dt, InputManager& input, PhysicsManager&, SoundMana
         extern Game* g_game;
         g_game->LoadLevel(1);
         return;
+    }
+
+      // Volume control
+    if (input.IsKeyPressed(DIK_P)) {
+        float v = sound.GetVolume(SoundManager::Bus::Master);
+        sound.SetVolume(SoundManager::Bus::Master, v + 0.1f);
+    }
+    if (input.IsKeyPressed(DIK_O)) {
+        float v = sound.GetVolume(SoundManager::Bus::Master);
+        sound.SetVolume(SoundManager::Bus::Master, v - 0.1f);
     }
 
     m_ballBody.UpdatePhysics(dt);

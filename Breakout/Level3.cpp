@@ -170,6 +170,15 @@ void Level3::Update(float dt, InputManager& inputManager, PhysicsManager& physic
 	// Update Animation Sprite
 	m_ball.UpdateAnimation(dt);
 	soundManager.Update();
+	// Volume control
+    if (inputManager.IsKeyPressed(DIK_P)) {
+        float v = soundManager.GetVolume(SoundManager::Bus::Master);
+        soundManager.SetVolume(SoundManager::Bus::Master, v + 0.1f);
+    }
+    if (inputManager.IsKeyPressed(DIK_O)) {
+        float v = soundManager.GetVolume(SoundManager::Bus::Master);
+        soundManager.SetVolume(SoundManager::Bus::Master, v - 0.1f);
+    }
 
 	const float screenW = g_game->GetScreenWidth(), screenH = g_game->GetScreenHeight();
 
