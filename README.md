@@ -1,7 +1,7 @@
 # BreakOut (Win32 / DirectX9)
 
 
-A small Win32 / DirectX9 game engine project that implements the classic BreakOut game. This repository contains a minimal, hand-rolled engine demonstrating Win32 window handling, DirectX9 rendering, simple physics, input management and sound.
+A small Win32 / DirectX9 game engine project that implements the classic BreakOut game. This repository contains a minimal, hand-rolled engine demonstrating Win32 window handling, DirectX9 rendering, simple physics, input management, sound management, game state management and animation.
 
 Prerequisites: see the [Prerequisites](#prerequisites) section below.
 
@@ -11,7 +11,7 @@ Prerequisites: see the [Prerequisites](#prerequisites) section below.
 
 ## Purpose
 
-- Showcase: a compact game engine suitable for a GitHub portfolio.
+- Showcase: a compact game engine for a tech showcase.
 - Learning: demonstrates practical Win32 + DirectX9 usage and classic game architecture.
 - Components: rendering, physics, input, sound and basic game states.
 
