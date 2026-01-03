@@ -85,6 +85,6 @@ Notes:
 
 
 
-### Full Clas Diagram
+### Full Class Diagram
 ![Breakout class diagram](https://github.com/user-attachments/assets/1046f013-7341-4279-8113-ef37bad64bd5)
 
