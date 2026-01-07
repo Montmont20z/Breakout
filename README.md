@@ -6,8 +6,8 @@ A small Win32 / DirectX9 game engine project that implements the classic BreakOu
 Prerequisites: see the [Prerequisites](#prerequisites) section below.
 
 <img width="2556" height="1389" alt="image" src="https://github.com/user-attachments/assets/ac50dae5-c151-45d9-ab38-74e962b66be6" />
-<img width="2559" height="1389" alt="image" src="https://github.com/user-attachments/assets/02fbadc5-c554-469a-84c0-79d920915188" />
 
+![Breakout](https://github.com/user-attachments/assets/e0c36a95-5bd1-4e59-b10c-60ca79667eed)
 
 ## Purpose
 
